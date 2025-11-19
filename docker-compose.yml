@@ -1,34 +1,11 @@
-version: "3.9"
+version: '3'
 
 services:
   db:
-    image: postgres:15-alpine
-    container_name: pos_db
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: pos
-      POSTGRES_USER: pos_user
-      POSTGRES_PASSWORD: pos_pass
+    container_name: pos-db
+    image: mongo:7.0.12
     volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pos_user -d pos"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  # Opcional: PgAdmin (GUI web)
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pos_pgadmin
+      - ./mongo:/data/db
     ports:
-      - "5050:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@local.test
-      PGADMIN_DEFAULT_PASSWORD: admin
-    depends_on:
-      - db
-
-volumes:
-  db_data:
+      - "27017:27017"
+    restart: always
