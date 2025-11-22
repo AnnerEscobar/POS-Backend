@@ -8,38 +8,47 @@ import {
   FindProductsQueryDto,
   StockStatus,
 } from './dto/find-product-query.dto';
+import { CategoriesService } from 'src/categories/categories.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
-  ) {}
+    private readonly categoriesService: CategoriesService,
+  ) { }
 
   // === CREAR (ya lo tendrás parecido) ===
   async create(createProductDto: CreateProductDto): Promise<Product> {
-    const {
-      salePrice,
-      costPrice,
-      code = null,
-      category = null,
-      description = null,
-      ...rest
-    } = createProductDto as any;
+  const {
+    salePrice,
+    costPrice,
+    code = null,
+    category = null,
+    description = null,
+    ...rest
+  } = createProductDto as any;
 
-    const created = new this.productModel({
-      ...rest,
-      code,
-      category,
-      description,
-      price: salePrice,
-      cost: costPrice,
-    });
-
-    return created.save();
+  // 🔥 Registrar categoría si viene en el DTO
+  if (category) {
+    await this.categoriesService.findOrCreateByName(category);
   }
 
- async findAll(queryDto: FindProductsQueryDto) {
+  const created = new this.productModel({
+    ...rest,
+    code,
+    category,
+    description,
+    price: salePrice,
+    cost: costPrice,
+  });
+
+  return created.save();
+}
+
+
+
+  async findAll(queryDto: FindProductsQueryDto) {
     const {
       category,
       stockStatus = StockStatus.ALL,
