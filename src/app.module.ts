@@ -7,7 +7,7 @@ import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGO_URL ?? 'mongodb://localhost:27017/pos'),
+    MongooseModule.forRoot(process.env.MONGO_URL),
     AuthModule, 
     UsersModule, ProductModule, CategoriesModule
   ],
