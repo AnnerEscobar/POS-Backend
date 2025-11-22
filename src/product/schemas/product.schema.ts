@@ -36,6 +36,5 @@ export class Product {
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
 // índices extra
-ProductSchema.index({ category: 1 });
 ProductSchema.index({ stock: 1 });
 ProductSchema.index({ name: 'text' });
