@@ -1,4 +1,18 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateProductDto } from './create-product.dto';
+import { IsNumber, IsOptional, Min } from 'class-validator';
 
-export class UpdateProductDto extends PartialType(CreateProductDto) {}
+export class QuickUpdateProductDto {
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  stock?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price?: number; // salePrice en el front → price en el schema
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  cost?: number;  // costPrice en el front → cost en el schema
+}

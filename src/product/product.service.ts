@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { QuickUpdateProductDto } from './dto/update-product.dto';
 import {
   FindProductsQueryDto,
   StockStatus,
@@ -20,31 +20,31 @@ export class ProductService {
 
   // === CREAR (ya lo tendrás parecido) ===
   async create(createProductDto: CreateProductDto): Promise<Product> {
-  const {
-    salePrice,
-    costPrice,
-    code = null,
-    category = null,
-    description = null,
-    ...rest
-  } = createProductDto as any;
+    const {
+      salePrice,
+      costPrice,
+      code = null,
+      category = null,
+      description = null,
+      ...rest
+    } = createProductDto as any;
 
-  // 🔥 Registrar categoría si viene en el DTO
-  if (category) {
-    await this.categoriesService.findOrCreateByName(category);
+    // 🔥 Registrar categoría si viene en el DTO
+    if (category) {
+      await this.categoriesService.findOrCreateByName(category);
+    }
+
+    const created = new this.productModel({
+      ...rest,
+      code,
+      category,
+      description,
+      price: salePrice,
+      cost: costPrice,
+    });
+
+    return created.save();
   }
-
-  const created = new this.productModel({
-    ...rest,
-    code,
-    category,
-    description,
-    price: salePrice,
-    cost: costPrice,
-  });
-
-  return created.save();
-}
 
 
 
@@ -95,6 +95,12 @@ export class ProductService {
       page,
       limit,
     };
+  }
+
+  async quickUpdate(id: string, dto: QuickUpdateProductDto): Promise<Product> {
+    return this.productModel
+      .findByIdAndUpdate(id, dto, { new: true })
+      .exec();
   }
 
   // Puedes mantener tus otros métodos (findOne, update, remove, etc.)
