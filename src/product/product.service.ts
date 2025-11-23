@@ -3,12 +3,19 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
-import { QuickUpdateProductDto } from './dto/update-product.dto';
+import { QuickUpdateProductDto } from './dto/QuickUpdateProduct.dto';
 import {
   FindProductsQueryDto,
   StockStatus,
 } from './dto/find-product-query.dto';
 import { CategoriesService } from 'src/categories/categories.service';
+import { UpdateProductDto } from './dto/UpdateProduct.dto';
+import {
+  normalizeCategoryName,
+  normalizeProductName,
+  normalizeDescription,
+} from '../common/text-normalizer';
+
 
 @Injectable()
 export class ProductService {
@@ -26,25 +33,32 @@ export class ProductService {
       code = null,
       category = null,
       description = null,
+      name,
       ...rest
     } = createProductDto as any;
 
-    // 🔥 Registrar categoría si viene en el DTO
-    if (category) {
-      await this.categoriesService.findOrCreateByName(category);
+    const normalizedName = normalizeProductName(name);
+    const normalizedDescription = description ? normalizeDescription(description) : null;
+
+    let normalizedCategory: string | null = null;
+    if (category && category.trim() !== '') {
+      const cat = await this.categoriesService.findOrCreateByName(category);
+      normalizedCategory = cat.name; // ya viene normalizado del service
     }
 
     const created = new this.productModel({
       ...rest,
+      name: normalizedName,
       code,
-      category,
-      description,
+      category: normalizedCategory,
+      description: normalizedDescription,
       price: salePrice,
       cost: costPrice,
     });
 
     return created.save();
   }
+
 
 
 
@@ -102,6 +116,45 @@ export class ProductService {
       .findByIdAndUpdate(id, dto, { new: true })
       .exec();
   }
+
+  async update(id: string, dto: UpdateProductDto): Promise<Product> {
+    const update: any = { ...dto };
+
+    if (dto.name !== undefined) {
+      update.name = normalizeProductName(dto.name);
+    }
+
+    if (dto.description !== undefined) {
+      update.description =
+        dto.description && dto.description.trim() !== ''
+          ? normalizeDescription(dto.description)
+          : null;
+    }
+
+    if (dto.category !== undefined) {
+      const raw = dto.category;
+
+      if (!raw || raw.trim() === '') {
+        update.category = null;
+      } else {
+        const cat = await this.categoriesService.findOrCreateByName(raw);
+        update.category = cat.name; // normalizada
+      }
+    }
+
+    // limpiar undefined
+    const cleanUpdate: any = {};
+    for (const [key, value] of Object.entries(update)) {
+      if (value !== undefined) {
+        cleanUpdate[key] = value;
+      }
+    }
+
+    return this.productModel
+      .findByIdAndUpdate(id, { $set: cleanUpdate }, { new: true })
+      .exec();
+  }
+
 
   // Puedes mantener tus otros métodos (findOne, update, remove, etc.)
 }
