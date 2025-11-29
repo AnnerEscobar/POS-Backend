@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
@@ -153,6 +153,36 @@ export class ProductService {
     return this.productModel
       .findByIdAndUpdate(id, { $set: cleanUpdate }, { new: true })
       .exec();
+  }
+
+  // 🔹 Descontar stock de un producto
+  async decreaseStock(productId: string, quantity: number): Promise<void> {
+    const res = await this.productModel
+      .updateOne(
+        {
+          _id: productId,
+          stock: { $gte: quantity }, // solo si tiene stock suficiente
+        },
+        {
+          $inc: { stock: -quantity },
+        },
+      )
+      .exec();
+
+    if (res.matchedCount === 0) {
+      throw new BadRequestException(
+        'No hay existencias suficientes para este producto',
+      );
+    }
+  }
+
+  // 🔹 Versión en lote (opcional, pero bonito)
+  async decreaseStockBulk(
+    items: { productId: string; quantity: number }[],
+  ): Promise<void> {
+    for (const item of items) {
+      await this.decreaseStock(item.productId, item.quantity);
+    }
   }
 
 
