@@ -1,19 +1,20 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) { }
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
-  async findAll() {
-    // El frontend espera un array de objetos con { name }
-    return this.categoriesService.findAll();
+  findAll(@Req() req: any) {
+    return this.categoriesService.findAll(req.user.tenantId);
   }
 
   @Post()
-  async create(@Body() dto: CreateCategoryDto) {
-    return this.categoriesService.create(dto);
+  create(@Req() req: any, @Body() dto: CreateCategoryDto) {
+    return this.categoriesService.create(req.user.tenantId, dto);
   }
 }

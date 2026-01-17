@@ -1,35 +1,37 @@
-import { Controller, Get, Post, Body, Query, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Patch, Param, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FindProductsQueryDto } from './dto/find-product-query.dto';
 import { QuickUpdateProductDto } from './dto/QuickUpdateProduct.dto';
 import { UpdateProductDto } from './dto/UpdateProduct.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('product')
 export class ProductController {
-  constructor(private readonly productService: ProductService) { }
+  constructor(private readonly productService: ProductService) {}
 
+  /** Crea producto dentro del tenant actual. */
   @Post()
-  create(@Body() dto: CreateProductDto) {
-    return this.productService.create(dto);
+  create(@Req() req: any, @Body() dto: CreateProductDto) {
+    return this.productService.create(req.user.tenantId, dto);
   }
 
+  /** Lista productos del tenant actual con filtros/paginación. */
   @Get()
-  findAll(@Query() query: FindProductsQueryDto) {
-    return this.productService.findAll(query);
+  findAll(@Req() req: any, @Query() query: FindProductsQueryDto) {
+    return this.productService.findAll(req.user.tenantId, query);
   }
 
-   // ⬇️ rápido (precio/costo/stock)
+  /** Update rápido (stock/precio/costo) para el tenant actual. */
   @Patch('quick/:id')
-  quickUpdate(@Param('id') id: string, @Body() dto: QuickUpdateProductDto) {
-    return this.productService.quickUpdate(id, dto);
+  quickUpdate(@Req() req: any, @Param('id') id: string, @Body() dto: QuickUpdateProductDto) {
+    return this.productService.quickUpdate(req.user.tenantId, id, dto);
   }
 
-  // ⬇️ general (nombre, categoría, descripción, etc.)
+  /** Update general para el tenant actual. */
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
-    return this.productService.update(id, dto);
+  update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.productService.update(req.user.tenantId, id, dto);
   }
-
-  // aquí seguirían tus otros endpoints (GET /:id, PATCH, DELETE, etc.)
 }

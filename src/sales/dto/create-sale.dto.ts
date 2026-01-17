@@ -25,13 +25,19 @@ export class CustomerDto {
 
 // 🔹 DTO para el pago
 export class PaymentDto {
+  /**
+   * Método de pago.
+   * Nota: en "mixto" normalmente se requiere un desglose adicional (futuro).
+   */
   @IsIn(['efectivo', 'tarjeta', 'transferencia', 'mixto'])
   method: 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto';
 
+  /** Monto pagado por el cliente. */
   @IsNumber()
   @Min(0)
   paid: number;
 
+  /** Cambio entregado (normalmente solo aplica si method = efectivo). */
   @IsNumber()
   @Min(0)
   change: number;

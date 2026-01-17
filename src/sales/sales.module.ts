@@ -3,13 +3,14 @@ import { SalesService } from './sales.service';
 import { SalesController } from './sales.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Sale, SaleSchema } from './schemas/sale.schema';
-import { Product } from 'src/product/schemas/product.schema';
 import { ProductModule } from 'src/product/product.module';
+import { CashModule } from 'src/cash/cash.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Sale.name, schema: SaleSchema }]),
     ProductModule,
+    CashModule
   ],
   controllers: [SalesController],
   providers: [SalesService],

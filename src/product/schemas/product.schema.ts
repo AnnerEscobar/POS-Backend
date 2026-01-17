@@ -5,6 +5,11 @@ export type ProductDocument = Product & Document;
 
 @Schema({ timestamps: true })
 export class Product {
+
+  /** Tenant/negocio dueño del producto (multi-tenant). */
+  @Prop({ required: true, index: true })
+  tenantId: string;
+
   @Prop({ required: true })
   name: string;
 
@@ -36,5 +41,8 @@ export class Product {
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
 // índices extra
-ProductSchema.index({ stock: 1 });
-ProductSchema.index({ name: 'text' });
+ProductSchema.index({ tenantId: 1, createdAt: -1 });
+ProductSchema.index({ tenantId: 1, category: 1 });
+ProductSchema.index({ tenantId: 1, stock: 1 });
+ProductSchema.index({ tenantId: 1, name: 'text' });
+

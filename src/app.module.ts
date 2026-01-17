@@ -6,13 +6,15 @@ import { ProductModule } from './product/product.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ConfigModule } from '@nestjs/config';
 import { SalesModule } from './sales/sales.module';
+import { CashModule } from './cash/cash.module';
+import { TenantsModule } from './tenants/tenants.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({isGlobal: true}),
     MongooseModule.forRoot(process.env.MONGO_URL),
     AuthModule, 
-    UsersModule, ProductModule, CategoriesModule, SalesModule
+    UsersModule, ProductModule, CategoriesModule, SalesModule, CashModule, TenantsModule,
   ],
   controllers: [],
   providers: [],

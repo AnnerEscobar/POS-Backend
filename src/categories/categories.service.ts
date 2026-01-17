@@ -13,30 +13,24 @@ export class CategoriesService {
     private readonly categoryModel: Model<CategoryDocument>,
   ) { }
 
-  async findAll(): Promise<Category[]> {
+
+  async findAll(tenantId: string): Promise<Category[]> {
     return this.categoryModel
-      .find({ isActive: true })
+      .find({ tenantId, isActive: true })
       .sort({ name: 1 })
       .lean()
       .exec();
   }
 
-  async create(dto: CreateCategoryDto): Promise<Category> {
-
+  async create(tenantId: string, dto: CreateCategoryDto): Promise<Category> {
     const name = normalizeCategoryName(dto.name);
-    if (!name) {
-      throw new BadRequestException('El nombre de la categoría es requerido');
-    }
+    if (!name) throw new BadRequestException('El nombre de la categoría es requerido');
 
-    const exists = await this.categoryModel
-      .findOne({ name })   // ya no hace falta el RegExp con i
-      .exec();
-
-    if (exists) {
-      throw new BadRequestException('La categoría ya existe');
-    }
+    const exists = await this.categoryModel.findOne({ tenantId, name }).exec();
+    if (exists) throw new BadRequestException('La categoría ya existe');
 
     const created = new this.categoryModel({
+      tenantId,
       name,
       isActive: dto.isActive ?? true,
     });
@@ -44,22 +38,14 @@ export class CategoriesService {
     return created.save();
   }
 
-  // 🔹 Para usar desde productos: buscar o crear
-  async findOrCreateByName(name: string): Promise<Category> {
-    const normalized = normalizeCategoryName(name);
+  async findOrCreateByName(tenantId: string, name: string): Promise<Category> {
+  const normalized = normalizeCategoryName(name);
+  if (!normalized) throw new BadRequestException('Nombre de categoría inválido');
 
-    if (!normalized) {
-      throw new BadRequestException('Nombre de categoría inválido');
-    }
+  const exists = await this.categoryModel.findOne({ tenantId, name: normalized }).exec();
+  if (exists) return exists;
 
-    const exists = await this.categoryModel
-      .findOne({ name: normalized })
-      .exec();
-
-    if (exists) return exists;
-
-    const created = new this.categoryModel({ name: normalized, isActive: true });
-    return created.save();
-  }
+  return new this.categoryModel({ tenantId, name: normalized, isActive: true }).save();
+}
 
 }

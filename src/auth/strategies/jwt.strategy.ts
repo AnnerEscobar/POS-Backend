@@ -4,15 +4,16 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 
 type JwtPayload = {
-  sub: string;
-  email: string;
-  role: string;
+    sub: string;
+    email: string;
+    role: string;
+    tenantId: string;
 };
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-   
-   
+
+
     constructor() {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -22,10 +23,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     async validate(payload: JwtPayload) {
-        return { 
-            userId: payload.sub, 
-            email: payload.email, 
-            role: payload.role 
+        return {
+            userId: payload.sub,
+            email: payload.email,
+            role: payload.role,
+            tenantId: payload.tenantId,
         };
     }
 }

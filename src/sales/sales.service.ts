@@ -1,10 +1,11 @@
 import { ProductService } from './../product/product.service';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery } from 'mongoose';
 import { Sale, SaleDocument } from './schemas/sale.schema';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { FindSalesQueryDto } from './dto/find-sales-query.dto';
+import { CashService } from 'src/cash/cash.service';
 
 @Injectable()
 export class SalesService {
@@ -14,31 +15,54 @@ export class SalesService {
     @InjectModel(Sale.name)
     private readonly saleModel: Model<SaleDocument>,
     private readonly productService: ProductService,
+    private cashService: CashService,
   ) { }
 
-  async create(dto: CreateSaleDto): Promise<Sale> {
-    // 👇 Filtramos solo ítems con productId (ventas “normales”)
-    const itemsWithProduct = dto.items.filter(it => !!it.productId);
+  async create(tenantId: string, userId: string, dto: CreateSaleDto): Promise<Sale> {
+    /**
+     * Regla de negocio:
+     * No se puede registrar venta si no existe una caja abierta.
+     */
+    const openCash = await this.cashService.getOpenCash(tenantId, userId); // modo PER_USER default
+    if (!openCash) {
+      throw new BadRequestException('No se puede registrar la venta: no hay una caja abierta para este usuario.');
+    }
 
+    // Stock
+    const itemsWithProduct = dto.items.filter(it => !!it.productId);
     if (itemsWithProduct.length > 0) {
       await this.productService.decreaseStockBulk(
+        tenantId,
         itemsWithProduct.map(it => ({
           productId: it.productId!,
           quantity: it.quantity,
         })),
       );
+
+
     }
 
+    /**
+     * Guardamos la venta asociada a:
+     * - tenantId: aislamiento multi-tenant
+     * - userId: auditoría del cajero
+     * - cashRegisterId: cierre exacto de caja
+     */
     const created = new this.saleModel({
       ...dto,
+      tenantId,
+      userId,
+      cashRegisterId: openCash._id.toString(),
       date: dto.date ?? new Date(),
     });
 
     return created.save();
   }
 
-  async findAll(query: FindSalesQueryDto) {
-    const filter: FilterQuery<SaleDocument> = {};
+
+
+  async findAll(tenantId: string, query: FindSalesQueryDto) {
+    const filter: FilterQuery<SaleDocument> = { tenantId };
 
     if (query.from || query.to) {
       filter.date = {};
@@ -63,7 +87,7 @@ export class SalesService {
     return items;
   }
 
-  async findOne(id: string): Promise<Sale | null> {
-    return this.saleModel.findById(id).exec();
+  async findOne(tenantId: string, id: string) {
+    return this.saleModel.findOne({ _id: id, tenantId }).exec();
   }
 }
