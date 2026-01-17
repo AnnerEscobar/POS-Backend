@@ -5,6 +5,12 @@
 /mongo
 /mongo/diagnostic.data
 mongo/journal
+# Mongo local data (NO versionar)
+mongo/
+**/mongo/
+*.wt
+WiredTiger*
+
 
 # Logs
 logs
